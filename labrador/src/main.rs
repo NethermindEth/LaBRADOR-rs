@@ -1,10 +1,7 @@
 use labrador::rq::Rq;
-use labrador::say_hello;
 use labrador::zq::Zq;
-
+mod jl;
 fn main() {
-    say_hello();
-
     // Example poly_ring
     let p1: Rq<2> = vec![Zq::new(1)].into();
     let p2: Rq<2> = vec![Zq::new(2), Zq::new(1), Zq::new(1)].into();
@@ -49,4 +46,12 @@ fn main() {
     let a = Zq::new(5);
     let b = Zq::new(3);
     println!("a + b = {}", a + b);
+
+    // Johnson Linderstrauss Projections
+    let m = 5;
+    let d = 5;
+    let matrix = jl::generate_random_projection_matrix(m, d);
+    for row in matrix {
+        println!("{:?}", row);
+    }
 }
