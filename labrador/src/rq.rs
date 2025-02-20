@@ -16,6 +16,7 @@
 
 // We use the Zq ring
 use crate::zq::Zq;
+use rand::Rng;
 use std::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 /// This module provides implementations for various operations
 /// in the polynomial ring R = Z_q\[X\] / (X^d + 1).
@@ -117,6 +118,68 @@ impl<const D: usize> Rq<D> {
     /// Check if two polynomials are equal
     pub fn is_equal(&self, other: &Self) -> bool {
         self.coeffs == other.coeffs
+    }
+
+    /// Generate random small polynomial for commitments
+    pub fn random_small() -> Self {
+        let mut rng = rand::rng();
+        let mut coeffs = [Zq::zero(); D];
+
+        for coeff in coeffs.iter_mut() {
+            // Explicitly sample from {-1, 0, 1} with equal probability
+            let val = match rng.random_range(0..3) {
+                0 => Zq::Q.wrapping_sub(1), // -1 mod q
+                1 => 0,                     // 0
+                2 => 1,                     // 1
+                _ => unreachable!(),
+            };
+            *coeff = Zq::new(val);
+        }
+
+        Rq::new(coeffs)
+    }
+
+    /// Encode message into polynomial with small coefficients.
+    ///
+    /// # Arguments
+    /// * `message` - A slice of booleans representing a binary message
+    ///
+    /// # Returns
+    /// * `Some(Rq)` - A polynomial where each coefficient is 0 or 1 based on the message bits
+    /// * `None` - If the message length exceeds the polynomial degree D
+    ///
+    /// # Format
+    /// * Each boolean is encoded as a coefficient: false -> 0, true -> 1
+    /// * Message bits are mapped to coefficients in order (index 0 -> constant term)
+    /// * Remaining coefficients (if message is shorter than D) are set to 0
+    pub fn encode_message(message: &[bool]) -> Option<Self> {
+        if message.len() > D {
+            return None;
+        }
+
+        let mut coeffs = [Zq::zero(); D];
+        for (i, &bit) in message.iter().enumerate() {
+            coeffs[i] = Zq::new(u32::from(bit));
+        }
+        Some(Rq::new(coeffs))
+    }
+
+    /// Iterator over coefficients
+    pub fn iter(&self) -> std::slice::Iter<'_, Zq> {
+        self.coeffs.iter()
+    }
+
+    /// Check if polynomial coefficients are within bounds
+    pub fn check_bounds(&self, bound: Zq) -> bool {
+        self.iter().all(|coeff| {
+            let val = coeff.value();
+            // Check if value is within [-bound, bound]
+            val <= bound.value() || val >= Zq::Q.wrapping_sub(bound.value())
+        })
+    }
+
+    pub fn zero() -> Self {
+        Self::new([Zq::zero(); D])
     }
 }
 
@@ -394,5 +457,33 @@ mod tests {
         let non_zero_poly: Rq<4> = vec![Zq::new(1), Zq::zero(), Zq::zero(), Zq::zero()].into();
         assert!(zero_poly.is_zero());
         assert!(!non_zero_poly.is_zero());
+    }
+
+    #[test]
+    fn test_encode_message() {
+        // Test successful encoding
+        let message = vec![true, false, true, false];
+        let encoded = Rq::<4>::encode_message(&message).unwrap();
+        assert_eq!(
+            encoded.coeffs,
+            [Zq::new(1), Zq::zero(), Zq::new(1), Zq::zero()]
+        );
+
+        // Test message shorter than degree
+        let short_message = vec![true, false];
+        let encoded_short = Rq::<4>::encode_message(&short_message).unwrap();
+        assert_eq!(
+            encoded_short.coeffs,
+            [Zq::new(1), Zq::zero(), Zq::zero(), Zq::zero()]
+        );
+
+        // Test message too long
+        let long_message = vec![true; 5];
+        assert!(Rq::<4>::encode_message(&long_message).is_none());
+
+        // Test empty message
+        let empty_message: Vec<bool> = vec![];
+        let encoded_empty = Rq::<4>::encode_message(&empty_message).unwrap();
+        assert!(encoded_empty.is_zero());
     }
 }

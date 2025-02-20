@@ -20,6 +20,10 @@ pub mod rq;
 
 pub mod zq;
 
+pub mod ajtai_commitment;
+
+pub mod rq_matrix;
+
 /// Prints a "Hello, world!" message
 pub fn say_hello() {
     println!("Hello, world!");
