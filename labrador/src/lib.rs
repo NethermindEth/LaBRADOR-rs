@@ -22,7 +22,6 @@ pub mod zq;
 
 #[cfg(test)]
 mod tests {
-    use super::*;
 
     #[test]
     fn test_for_workflow() {
