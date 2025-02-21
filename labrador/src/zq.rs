@@ -32,6 +32,10 @@ impl Zq {
     pub fn value(&self) -> u32 {
         self.value
     }
+
+    pub fn is_zero(&self) -> bool {
+        self.value == 0
+    }
 }
 
 // Macro to generate arithmetic trait implementations

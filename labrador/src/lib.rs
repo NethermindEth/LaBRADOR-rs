@@ -19,3 +19,7 @@
 pub mod rq;
 
 pub mod zq;
+
+pub mod ajtai_commitment;
+
+pub mod rq_matrix;

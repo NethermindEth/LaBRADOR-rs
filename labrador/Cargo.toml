@@ -6,3 +6,5 @@ repository.workspace = true
 license.workspace = true
 
 [dependencies]
+rand = "0.9"
+thiserror = "1.0"
